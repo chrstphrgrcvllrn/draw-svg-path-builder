@@ -269,12 +269,100 @@ export default function App() {
       {leftOpen && (
         <aside className="side-panel side-panel-left open">
           <div className="side-panel-header">
-            <span className="side-panel-title">Lines &amp; Canvas</span>
+            <span className="side-panel-title">Tools</span>
             <button className="side-panel-icon-btn" type="button" aria-label="Close panel" onClick={() => setLeftOpen(false)}>
               ×
             </button>
           </div>
           <div className="side-panel-body">
+            <div className="sort-filter-section">
+              <div className="sort-filter-section-title">Tool</div>
+              <div className="panel-row">
+                <div className="view-mode-switch">
+                  <button className={`view-mode-option${tool === 'draw' ? ' active' : ''}`} type="button" title="Draw (P)" aria-label="Draw tool" onClick={() => setTool('draw')}>
+                    <Icon name="pencil" />
+                  </button>
+                  <button className={`view-mode-option${tool === 'select' ? ' active' : ''}`} type="button" title="Edit (V)" aria-label="Edit tool" onClick={() => setTool('select')}>
+                    <Icon name="cursor" />
+                  </button>
+                </div>
+                {tool === 'draw' && (
+                  <button className="chip-button" type="button" disabled={!drawingId} onClick={() => setDrawingId(null)}>
+                    <Icon name="check" />
+                    <span className="btn-label">Finish</span>
+                  </button>
+                )}
+                <span className="controls-spacer" />
+                <button className="chip-button chip-button-icon" type="button" title="Undo" aria-label="Undo" disabled={!canUndo} onClick={undo}>
+                  <Icon name="undo" />
+                </button>
+                <button className="chip-button chip-button-icon" type="button" title="Redo" aria-label="Redo" disabled={!canRedo} onClick={redo}>
+                  <Icon name="redo" />
+                </button>
+              </div>
+            </div>
+
+            <div className="sort-filter-section">
+              <div className="sort-filter-section-title">{selected ? 'Selected line' : 'New line'}</div>
+              <Spinner id="widthInput" label="Width" value={cur.width} min={1} max={500} step={2} onBegin={beginSlide} onChange={(v) => patchStyle({ width: v })} />
+              <Spinner id="curveInput" label="Curve" value={cur.smooth} min={0} max={2} step={0.1} onBegin={beginSlide} onChange={(v) => patchStyle({ smooth: v })} />
+              <div className="sort-group">
+                <label htmlFor="colorInput">Color</label>
+                <input id="colorInput" className="color-input" type="color" value={cur.color} onChange={(e) => patchStyle({ color: e.target.value })} />
+              </div>
+              {selected && (
+                <div className="panel-row">
+                  <button
+                    className={`chip-button${selected.closed ? ' active' : ''}`}
+                    type="button"
+                    disabled={selected.points.length < 3}
+                    onClick={() => {
+                      snapshot()
+                      setLines((ls) => ls.map((l) => (l.id === selected.id ? { ...l, closed: !l.closed } : l)))
+                    }}
+                  >
+                    <span className="btn-label">Closed</span>
+                  </button>
+                  <button className="chip-button" type="button" onClick={() => deleteLine(selected.id)}>
+                    <Icon name="trash" />
+                    <span className="btn-label">Delete line</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {pt && (
+              <div className="sort-filter-section">
+                <div className="sort-filter-section-title">Point {selectedPt! + 1}</div>
+                <div className="view-mode-switch">
+                  <button className={`view-mode-option text${pt.mode !== 'corner' ? ' active' : ''}`} type="button" onClick={() => setPointMode(pt.mode === 'manual' ? 'manual' : 'auto')}>
+                    Smooth
+                  </button>
+                  <button className={`view-mode-option text${pt.mode === 'corner' ? ' active' : ''}`} type="button" onClick={() => setPointMode('corner')}>
+                    Corner
+                  </button>
+                </div>
+                <div className="panel-row">
+                  <button className="chip-button" type="button" disabled={pt.mode !== 'manual'} onClick={() => setPointMode('auto')}>
+                    <span className="btn-label">Reset handles</span>
+                  </button>
+                  <button className="chip-button" type="button" onClick={deletePoint}>
+                    <Icon name="trash" />
+                    <span className="btn-label">Point</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="sort-filter-section">
+              <div className="sort-filter-section-title">View</div>
+              <Spinner id="zoomInput" label="Zoom" value={Math.round(zoom * 100)} min={20} max={300} step={10} onChange={(v) => setZoom(v / 100)} />
+              <button className="chip-button chip-button-primary wide" type="button" disabled={!hasLines} onClick={() => copy('svg', svgText)}>
+                <Icon name={copied === 'svg' ? 'check' : 'copy'} />
+                <span className="btn-label">{copied === 'svg' ? 'Copied!' : 'Copy SVG'}</span>
+              </button>
+            </div>
+
             <div className="sort-filter-section">
               <div className="sort-filter-section-title">Canvas</div>
               <div className="row small">
@@ -364,13 +452,12 @@ export default function App() {
                 <span className="btn-label">Remove Guide</span>
               </button>
             )}
-            <button className={`btn btn-secondary${codeOpen ? ' active' : ''}`} type="button" onClick={() => setCodeOpen(true)}>
-              <Icon name="code" />
-              <span className="btn-label">Paste SVG</span>
-            </button>
             <span id="dropHint">or drag &amp; drop an image here</span>
           </div>
           <div className="header-actions">
+            <button className={`icon-button${leftOpen ? ' active' : ''}`} type="button" title="Toggle tools panel" aria-label="Toggle tools panel" onClick={() => setLeftOpen((o) => !o)}>
+              <Icon name="lines" />
+            </button>
             <button className={`icon-button${codeOpen ? ' active' : ''}`} type="button" title="Import / Export code" aria-label="Toggle code panel" onClick={() => setCodeOpen((o) => !o)}>
               <Icon name="code" />
             </button>
@@ -393,87 +480,6 @@ export default function App() {
             </button>
           </div>
         </header>
-
-        <div id="controls">
-          <button className={`chip-button${leftOpen ? ' active' : ''}`} type="button" onClick={() => setLeftOpen((o) => !o)}>
-            <Icon name="lines" />
-            <span className="btn-label">Lines</span>
-          </button>
-          <div className="view-mode-switch">
-            <button className={`view-mode-option${tool === 'draw' ? ' active' : ''}`} type="button" title="Draw (P)" aria-label="Draw tool" onClick={() => setTool('draw')}>
-              <Icon name="pencil" />
-            </button>
-            <button className={`view-mode-option${tool === 'select' ? ' active' : ''}`} type="button" title="Edit (V)" aria-label="Edit tool" onClick={() => setTool('select')}>
-              <Icon name="cursor" />
-            </button>
-          </div>
-          {tool === 'draw' && (
-            <button className="chip-button" type="button" disabled={!drawingId} onClick={() => setDrawingId(null)}>
-              <Icon name="check" />
-              <span className="btn-label">Finish</span>
-            </button>
-          )}
-          <Spinner id="widthInput" label="Width" value={cur.width} min={1} max={500} step={2} onBegin={beginSlide} onChange={(v) => patchStyle({ width: v })} />
-          <Spinner id="curveInput" label="Curve" value={cur.smooth} min={0} max={2} step={0.1} onBegin={beginSlide} onChange={(v) => patchStyle({ smooth: v })} />
-          <div className="sort-group">
-            <label htmlFor="colorInput">Color</label>
-            <input id="colorInput" className="color-input" type="color" value={cur.color} onChange={(e) => patchStyle({ color: e.target.value })} />
-          </div>
-          {selected && (
-            <button
-              className={`chip-button${selected.closed ? ' active' : ''}`}
-              type="button"
-              disabled={selected.points.length < 3}
-              onClick={() => {
-                snapshot()
-                setLines((ls) => ls.map((l) => (l.id === selected.id ? { ...l, closed: !l.closed } : l)))
-              }}
-            >
-              <span className="btn-label">Closed</span>
-            </button>
-          )}
-          {selected && (
-            <button className="chip-button chip-button-icon" type="button" title="Delete line" aria-label="Delete line" onClick={() => deleteLine(selected.id)}>
-              <Icon name="trash" />
-            </button>
-          )}
-          {pt && (
-            <>
-              <div className="view-mode-switch">
-                <button className={`view-mode-option text${pt.mode !== 'corner' ? ' active' : ''}`} type="button" onClick={() => setPointMode(pt.mode === 'manual' ? 'manual' : 'auto')}>
-                  Smooth
-                </button>
-                <button className={`view-mode-option text${pt.mode === 'corner' ? ' active' : ''}`} type="button" onClick={() => setPointMode('corner')}>
-                  Corner
-                </button>
-              </div>
-              <button className="chip-button" type="button" disabled={pt.mode !== 'manual'} onClick={() => setPointMode('auto')}>
-                <span className="btn-label">Reset handles</span>
-              </button>
-              <button className="chip-button" type="button" onClick={deletePoint}>
-                <Icon name="trash" />
-                <span className="btn-label">Point</span>
-              </button>
-            </>
-          )}
-          <span className="controls-spacer" />
-          <button className="chip-button chip-button-icon" type="button" title="Undo" aria-label="Undo" disabled={!canUndo} onClick={undo}>
-            <Icon name="undo" />
-          </button>
-          <button className="chip-button chip-button-icon" type="button" title="Redo" aria-label="Redo" disabled={!canRedo} onClick={redo}>
-            <Icon name="redo" />
-          </button>
-          {image && (
-            <button className={`chip-button chip-button-icon${showImage ? ' active' : ''}`} type="button" title="Show guide" aria-label="Toggle guide" onClick={() => setShowImage((s) => !s)}>
-              <Icon name="eye" />
-            </button>
-          )}
-          <Spinner id="zoomInput" label="Zoom" value={Math.round(zoom * 100)} min={20} max={300} step={10} onChange={(v) => setZoom(v / 100)} />
-          <button className="chip-button chip-button-primary" type="button" disabled={!hasLines} onClick={() => copy('svg', svgText)}>
-            <Icon name={copied === 'svg' ? 'check' : 'copy'} />
-            <span className="btn-label">{copied === 'svg' ? 'Copied!' : 'Copy SVG'}</span>
-          </button>
-        </div>
 
         <div className="stage" id="stage">
           <Canvas

@@ -145,7 +145,7 @@ kbd { font: inherit; font-size: 11px; padding: 1px 5px; border: 1px solid var(--
 .hline { stroke: #2f7bff; pointer-events: none; }
 
 /* ---------- side panels ---------- */
-.side-panel { width: 260px; flex: none; display: flex; flex-direction: column; background: var(--surface); min-height: 0; }
+.side-panel { width: 288px; flex: none; display: flex; flex-direction: column; background: var(--surface); min-height: 0; }
 .side-panel-left { border-right: 1px solid var(--border); }
 .side-panel-right { width: 340px; border-left: 1px solid var(--border); }
 .side-panel-header { display: flex; align-items: center; justify-content: space-between; height: 58px; padding: 0 12px 0 16px; border-bottom: 1px solid var(--border); flex: none; }
@@ -213,3 +213,7 @@ kbd { font: inherit; font-size: 11px; padding: 1px 5px; border: 1px solid var(--
 .guide-preview img { display: block; width: 100%; max-height: 160px; object-fit: contain; background: repeating-conic-gradient(var(--field) 0 25%, var(--surface) 0 50%) 0 0 / 14px 14px; }
 .guide-preview figcaption { display: flex; justify-content: space-between; gap: 8px; padding: 6px 10px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); }
 .guide-preview .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+
+.panel-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.side-panel .sort-group { justify-content: space-between; }
+.chip-button.wide { width: 100%; }
